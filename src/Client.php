@@ -129,11 +129,34 @@ class Client implements EventEmitterInterface {
 		return $this->send( $packet , $callback);
 	}
 
+	public function publish($msg, $topic, $qos=0, $callback=NULL) {
+
+		$packet = new Packet\Publish();
+		$packet->setTopic($topic);
+		$packet->setMessage($msg);
+		if ($qos < 1) {
+			return $this->sendAndForget( $packet , $callback );
+		} else {
+			return $this->send( $packet , $callback );
+		}
+	}
+
 	private function applyUri(string $uri) {
 		$newuri = new Uri($uri);
 		$this->topicList = explode(',', $newuri->getQueryParameter("topics"));
 		$this->clientId  = $newuri->getQueryParameter("clientId");
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
+	}
+
+	private function sendAndForget(object $packet, callable $callback = null): Promise {
+		if (! $this->connackReceived && !($packet  instanceof Packet\Connect)) {
+			$this->queue[] = [$packet, $callback];
+		}
+		$p = $this->_asyncsend($packet);
+		if ($callback) {
+			$p->onResolve($callback);
+		}
+		return $p;
 	}
 
 	private function send(object $packet, callable $callback = null): Promise {
@@ -168,10 +191,10 @@ class Client implements EventEmitterInterface {
 		}
 	}
 
-	protected function _asyncsend($packet, $promise) {
-		call(function () use ($packet, $promise) {
+	protected function _asyncsend($packet, $promise=NULL) {
+		return call(function () use ($packet, $promise) {
 			yield $this->connection->send($packet);
-			yield $promise;
+			if ($promise) yield $promise;
 		});
 	}
 }

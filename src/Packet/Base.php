@@ -8,6 +8,9 @@ class Base {
 
 	public $id = '';
 
+	public function fromNetwork($hdr, $data) {
+	}
+
 	public function setId($id) {
 		$this->id = $id;
 		return $this->getId();

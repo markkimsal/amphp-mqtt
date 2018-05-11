@@ -10,7 +10,10 @@ class Connack extends Base {
 		return FALSE;
 	}
 
-	public function __construct($hdr, $data) {
+	public function __construct() {
+	}
+
+	public function fromNetwork($hdr, $data) {
 
 		$rsp = unpack('C', substr($data, 1, 1));
 		$rsp = $rsp[1];

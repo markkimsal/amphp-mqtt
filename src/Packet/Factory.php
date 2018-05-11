@@ -21,19 +21,22 @@ class Factory {
 			if (strlen($data) < 2) {
 				throw new \Exception('not enough payload for connack');
 			}
-			$packet = new Connack($hdr, $data);
+			$packet = new Connack();
+			$packet->fromNetwork($hdr, $data);
 		}
 		if ($highbit == Factory::SUBACK) {
 			if (strlen($data) < 2) {
 				throw new \Exception('not enough payload for suback');
 			}
-			$packet = new Suback($hdr, $data);
+			$packet = new Suback();
+			$packet->fromNetwork($hdr, $data);
 		}
 		if ($highbit == Factory::PUBLISH) {
 			if (strlen($data) < 2) {
 				throw new \Exception('not enough payload for publish');
 			}
-			$packet = new Publish($hdr, $data);
+			$packet = new Publish();
+			$packet->fromNetwork($hdr, $data);
 		}
 
 		if ($packet == NULL) {

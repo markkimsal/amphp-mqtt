@@ -4,16 +4,16 @@ namespace MarkKimsal\Mqtt\Packet;
 
 class Publish extends Base {
 
+	protected $type  = 0x30;
 	protected $msg   = NULL;
 	protected $topic = NULL;
 
-	public function __construct($hdr, $data) {
+	public function __construct() {
+	}
+
+	public function fromNetwork($hdr, $data) {
 //		$this->dumphex($hdr);
 //		$this->dumphex($data);
-		/*
-		$len   = unpack('C', substr($data, 0, 1));
-		$this->len   = $len[1];
-		 */
 
 		$len  = unpack('n', substr($data, 0, 2)); 
 		$len  = $len[1];
@@ -25,8 +25,39 @@ class Publish extends Base {
 		$this->msg = $data;
 	}
 
+	public function packbytes() {
+
+		$topic   = $this->getTopic();
+		$payload = $this->getMessage();
+		$qos     = 0x00;
+
+		$hdr = $this->type | 0x00;
+
+		$vhd  = pack('n', strlen($topic)).$topic;
+		//only required for QoS > 0
+		if ($qos > 0 ) {
+			$vhd .= pack('n', $this->getId());
+		}
+
+		$len = pack('n', strlen($vhd) + strlen($payload));
+		$len = strlen($vhd) + strlen($payload);
+
+		$buffer  = pack('C*', $hdr,  $len).$vhd.$payload; 
+		//$this->dumphex($buffer);
+
+		return $buffer;
+	}
+
+	public function setTopic($t) {
+		$this->topic = $t;
+	}
+
 	public function getTopic() {
 		return $this->topic;
+	}
+
+	public function setMessage($m) {
+		$this->msg = $m;
 	}
 
 	public function getMessage() {

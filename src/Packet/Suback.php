@@ -4,7 +4,10 @@ namespace MarkKimsal\Mqtt\Packet;
 
 class Suback extends Base {
 
-	public function __construct($hdr, $data) {
+	public function __construct() {
+	}
+
+	public function fromNetwork($hdr, $data) {
 //		$this->dumphex($hdr);
 //		$this->dumphex($data);
 
