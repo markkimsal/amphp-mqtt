@@ -4,9 +4,10 @@ namespace MarkKimsal\Mqtt\Packet;
 
 class Publish extends Base {
 
-	protected $type  = 0x30;
-	protected $msg   = NULL;
-	protected $topic = NULL;
+	protected $type   = 0x30;
+	protected $msg    = null;
+	protected $topic  = null;
+	protected $retain = false;
 
 	public function __construct() {
 	}
@@ -32,6 +33,11 @@ class Publish extends Base {
 		$qos     = 0x00;
 
 		$hdr = $this->type | 0x00;
+		if ($this->getRetain()) {
+			$hdr |= 0x01;
+		}
+
+		$hdr |= $qos;
 
 		$vhd  = pack('n', strlen($topic)).$topic;
 		//only required for QoS > 0
@@ -62,5 +68,12 @@ class Publish extends Base {
 
 	public function getMessage() {
 		return $this->msg;
+	}
+
+	public function setRetain($r=true) {
+		$this->retain = (bool)$r;
+	}
+	public function getRetain() {
+		return $this->retain;
 	}
 }

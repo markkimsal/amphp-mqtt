@@ -130,15 +130,25 @@ class Client implements EventEmitterInterface {
 	}
 
 	public function publish($msg, $topic, $qos=0, $callback=NULL) {
-
-		$packet = new Packet\Publish();
+		if (! $msg instanceof Packet\Publish) {
+			$packet = new Packet\Publish();
+			$packet->setMessage($msg);
+		} else {
+			$packet = $msg;
+		}
 		$packet->setTopic($topic);
-		$packet->setMessage($msg);
 		if ($qos < 1) {
 			return $this->sendAndForget( $packet , $callback );
 		} else {
 			return $this->send( $packet , $callback );
 		}
+	}
+
+	public function publishRetain($msg, $topic, $qos=0, $callback=NULL) {
+		$packet = new Packet\Publish();
+		$packet->setMessage($msg);
+		$packet->setRetain(true);
+		return $this->publish($packet, $topic, $qos, $callback);
 	}
 
 	private function applyUri(string $uri) {
@@ -160,7 +170,6 @@ class Client implements EventEmitterInterface {
 	}
 
 	private function send(object $packet, callable $callback = null): Promise {
-
 		$deferred = new Deferred();
 		$pid = rand(1,10000);
 		if($packet->setId($pid)) {
