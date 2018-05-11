@@ -1,0 +1,6 @@
+/coverage/
+/composer.lock
+/vendor/
+/test/
+/old-src/
+/docs/
