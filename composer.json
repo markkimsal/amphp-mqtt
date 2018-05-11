@@ -1,0 +1,29 @@
+{
+    "name": "markkimsal/amphp-mqtt",
+    "description": "Async MQTT client for Amp.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mark Kimsal"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "MarkKimsal\\Mqtt\\": "src"
+        },
+        "files": [
+            "src/functions.php"
+		]
+    },
+    "require": {
+        "evenement/evenement": "~3.0",
+        "amphp/amp": "^2",
+        "amphp/socket": "^0.10",
+        "amphp/uri": "^0.1"
+    },
+    "config": {
+        "platform": {
+            "php": "7.0.0"
+        }
+    }
+}
