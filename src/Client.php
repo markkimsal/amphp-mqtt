@@ -46,6 +46,7 @@ class Client implements EventEmitterInterface {
 				$deferred = $this->deferredsById[$pid];
 				unset($this->deferredsById[$pid]);
 			} else {
+				echo "D/Client: Response is untracked deferred: ".get_class($response)."\n";
 				$deferred = array_shift($this->deferreds);
 			}
 
@@ -90,7 +91,8 @@ class Client implements EventEmitterInterface {
 			});
 		}
 
-		$this->connection->on("connect", function () {
+		$this->connection->on("connect", function ($response) {
+			echo "D/Client: Response is untracked deferred: ".get_class($response)."\n";
 			$this->connackReceived = true;
 			$this->flushQueue();
 		});
