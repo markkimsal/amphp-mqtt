@@ -11,16 +11,16 @@ use function Amp\call;
 
 
 class Client implements EventEmitterInterface {
-    use EventEmitterTrait;
+	use EventEmitterTrait;
 
-    /** @var Deferred[] */
-    protected $deferreds;
+	/** @var Deferred[] */
+	protected $deferreds;
 
-    /** @var Deferred[] */
-    protected $deferredsById;
+	/** @var Deferred[] */
+	protected $deferredsById;
 
-    /** @var Connection */
-    protected $connection;
+	/** @var Connection */
+	protected $connection;
 
 	/** @var array */
 	protected $topicList;
@@ -28,14 +28,14 @@ class Client implements EventEmitterInterface {
 	/** @var string */
 	public $clientId = '';
 
-    public function __construct(string $uri) {
-        $this->applyUri($uri);
+	public function __construct(string $uri) {
+		$this->applyUri($uri);
 
-        $this->deferreds = [];
+		$this->deferreds = [];
 
-        $this->connection = new Connection($uri);
+		$this->connection = new Connection($uri);
 
-        $this->connection->on("response", function ($response) {
+		$this->connection->on("response", function ($response) {
 			if ($pid = $response->getId()) {
 				echo "D/Client: Response is deferreds by id: ($pid) ".get_class($response)."\n";
 				$deferred = $this->deferredsById[$pid];
@@ -45,46 +45,46 @@ class Client implements EventEmitterInterface {
 			}
 
 			if ($response->isFailure() || $response instanceof \Throwable) {
-                $deferred->fail($response);
-            } else {
-                $deferred->resolve($response);
-            }
-        });
+				$deferred->fail($response);
+			} else {
+				$deferred->resolve($response);
+			}
+		});
 
-        $this->connection->on("message", function ($response) {
+		$this->connection->on("message", function ($response) {
 			$this->emit('message', [$response]); //up the chain
 		});
 
 		$this->connection->on('close', function (Throwable $error = null) {
-            if ($error) {
-                // Fail any outstanding promises
-                while ($this->deferreds) {
-                    /** @var Deferred $deferred */
-                    $deferred = array_shift($this->deferreds);
-                    $deferred->fail($error);
-                }
-            }
-        });
+			if ($error) {
+				// Fail any outstanding promises
+				while ($this->deferreds) {
+					/** @var Deferred $deferred */
+					$deferred = array_shift($this->deferreds);
+					$deferred->fail($error);
+				}
+			}
+		});
 
 		$this->connection->on('error', function (Throwable $error = null) {
-            if ($error) {
-                // Fail any outstanding promises
-                while ($this->deferreds) {
-                    /** @var Deferred $deferred */
-                    $deferred = array_shift($this->deferreds);
-                    $deferred->fail($error);
-                }
-            }
-        });
+			if ($error) {
+				// Fail any outstanding promises
+				while ($this->deferreds) {
+					/** @var Deferred $deferred */
+					$deferred = array_shift($this->deferreds);
+					$deferred->fail($error);
+				}
+			}
+		});
 
-        if (count($this->topicList)) {
-            $this->connection->on("connect", function () {
+		if (count($this->topicList)) {
+			$this->connection->on("connect", function () {
 				$promiseList = $this->subscribeToAll($this->topicList, function($err, $resp) {
 					#echo "Got subscribe to all response.\n";
 				});
-            });
-        }
-    }
+			});
+		}
+	}
 
 	public function connect() {
 		$packet = new Packet\Connect();
@@ -116,12 +116,12 @@ class Client implements EventEmitterInterface {
 		return $this->send( $packet , $callback);
 	}
 
-    private function applyUri(string $uri) {
-        $this->topicList = explode(',', (new Uri($uri))->getQueryParameter("topics"));
-        $this->clientId  = (new Uri($uri))->getQueryParameter("clientId");
-    }
+	private function applyUri(string $uri) {
+		$this->topicList = explode(',', (new Uri($uri))->getQueryParameter("topics"));
+		$this->clientId  = (new Uri($uri))->getQueryParameter("clientId");
+	}
 
-    private function send(object $packet, callable $callback = null): Promise {
+	private function send(object $packet, callable $callback = null): Promise {
 
 		$deferred = new Deferred();
 		$pid = rand(1,10000);
@@ -137,11 +137,11 @@ class Client implements EventEmitterInterface {
 			$promise->onResolve($callback);
 		}
 
-        //return call(function () use ($packet, $callback, $promise) {
-        call(function () use ($packet, $promise) {
-            yield $this->connection->send($packet);
+		//return call(function () use ($packet, $callback, $promise) {
+		call(function () use ($packet, $promise) {
+			yield $this->connection->send($packet);
 			yield $promise;
-        });
+		});
 		return $promise;
-    }
+	}
 }

@@ -4,24 +4,18 @@ namespace MarkKimsal\Mqtt;
 use function MarkKimsal\Mqtt\dumphex;
 
 class Parser {
-    const CRLF = "\r\n";
 
-    const ERROR_OUT_OF_MEMORY = "OUT_OF_MEMORY";
-    const ERROR_INTERNAL_ERROR = "INTERNAL_ERROR";
-    const ERROR_BAD_FORMAT = "BAD_FORMAT";
-    const ERROR_UNKNOWN_COMMAND = "UNKNOWN_COMMAND";
+	private $responseCallback;
+	private $buffer = "";
 
-    private $responseCallback;
-    private $buffer = "";
-
-    public function __construct(callable $responseCallback) {
-        $this->responseCallback = $responseCallback;
-    }
+	public function __construct(callable $responseCallback) {
+		$this->responseCallback = $responseCallback;
+	}
 
 
-    public function read(string $bytes) {
+	public function read(string $bytes) {
 
-        $this->buffer .= $bytes;
+		$this->buffer .= $bytes;
 		while (true) {
 			if (strlen($this->buffer) <  2) {
 				return;
@@ -61,13 +55,13 @@ class Parser {
 				Packet\Factory::create($type, $packet)
 			);
 		}
-    }
+	}
 
 	public function bytesRemaining() {
 		return strlen($this->buffer);
 	}
 
-    public function reset() {
-        $this->buffer = "";
-    }
+	public function reset() {
+		$this->buffer = "";
+	}
 }
