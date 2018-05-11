@@ -25,6 +25,9 @@ class Client implements EventEmitterInterface {
 	/** @var array */
 	protected $topicList;
 
+	/** @var int */
+	protected $timeout = 0;
+
 	/** @var string */
 	public $clientId = '';
 
@@ -84,18 +87,24 @@ class Client implements EventEmitterInterface {
 				});
 			});
 		}
+
+		$this->connection->on("connect", function () {
+			$this->connackReceived = true;
+			$this->flushQueue();
+		});
 	}
 
-	public function connect() {
+	public function connect($callback = NULL) {
 		$packet = new Packet\Connect();
 		if ($this->clientId) {
 			$packet->setClientId($this->clientId);
 		}
+		if ($this->timeout) {
+			$packet->setTimeout($this->timeout);
+		}
 		$packet->setVersion311();
-		return $this->send( $packet , function($response) {
-			echo "Connected\n";
-			//$response is connack, mostly empty
-		});
+
+		return $this->send($packet , $callback);
 	}
 
 	public function subscribeToAll($topics, $callback = NULL) {
@@ -117,8 +126,10 @@ class Client implements EventEmitterInterface {
 	}
 
 	private function applyUri(string $uri) {
-		$this->topicList = explode(',', (new Uri($uri))->getQueryParameter("topics"));
-		$this->clientId  = (new Uri($uri))->getQueryParameter("clientId");
+		$newuri = new Uri($uri);
+		$this->topicList = explode(',', $newuri->getQueryParameter("topics"));
+		$this->clientId  = $newuri->getQueryParameter("clientId");
+		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
 	}
 
 	private function send(object $packet, callable $callback = null): Promise {

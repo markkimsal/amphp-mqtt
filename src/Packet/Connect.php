@@ -4,8 +4,8 @@ namespace MarkKimsal\Mqtt\Packet;
 
 class Connect extends Base {
 
-	public $version = 0x04;
-	public $keepalive = 10;
+	public $version   = 0x04; //3.11
+	public $keepalive = 0;
 	public $clientId  = '';
 	public $flagCleanSession = 0x02;
 	public $flagWill         = 0x04;
@@ -14,6 +14,10 @@ class Connect extends Base {
 
 	public function getId() {
 		return FALSE;
+	}
+
+	public function setTimeout($t=0) {
+		$this->keepalive = $t;
 	}
 
 	public function setClientId($cid) {
