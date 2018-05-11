@@ -31,6 +31,8 @@ class Client implements EventEmitterInterface {
 	/** @var string */
 	public $clientId = '';
 
+	protected $connackReceived = FALSE;
+
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
 
@@ -148,11 +150,26 @@ class Client implements EventEmitterInterface {
 			$promise->onResolve($callback);
 		}
 
-		//return call(function () use ($packet, $callback, $promise) {
+		if (! $this->connackReceived && !($packet  instanceof Packet\Connect)) {
+			$this->queue[] = [$packet, $callback];
+			return $promise;
+		}
+
+		$this->_asyncsend($packet, $promise);
+		return $promise;
+	}
+
+	protected function flushQueue() {
+		foreach ($this->queue as $_idx => $_struct) {
+			$this->_asyncsend($_struct[0], $_struct[1]);
+			unset($this->queue[$_idx]);
+		}
+	}
+
+	protected function _asyncsend($packet, $promise) {
 		call(function () use ($packet, $promise) {
 			yield $this->connection->send($packet);
 			yield $promise;
 		});
-		return $promise;
 	}
 }
