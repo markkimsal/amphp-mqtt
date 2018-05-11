@@ -15,7 +15,7 @@ class Publish extends Base {
 //		$this->dumphex($hdr);
 //		$this->dumphex($data);
 
-		$len  = unpack('n', substr($data, 0, 2)); 
+		$len  = unpack('n', substr($data, 0, 2));
 		$len  = $len[1];
 		$data = substr($data, 2);
 		
@@ -39,10 +39,10 @@ class Publish extends Base {
 			$vhd .= pack('n', $this->getId());
 		}
 
-		$len = pack('n', strlen($vhd) + strlen($payload));
 		$len = strlen($vhd) + strlen($payload);
+		$len = $this->encodeLength($len);
 
-		$buffer  = pack('C*', $hdr,  $len).$vhd.$payload; 
+		$buffer  = pack('C*', $hdr).$len.$vhd.$payload; 
 		//$this->dumphex($buffer);
 
 		return $buffer;

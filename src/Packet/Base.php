@@ -27,4 +27,20 @@ class Base {
 	public function dumphex($data) {
 		dumphex($data);
 	}
+
+	/**
+	 * Encode length in dynamic byte packed format
+	 */
+	public function encodeLength($len) {
+		$bytes = '';
+		do {
+			$encoded = $len % 128;
+			$len     = floor($len / 128);
+			if ($len > 0 ) {
+				$encoded = $encoded | 0x80;
+			}
+			$bytes .= pack('c', $encoded);
+		} while ($len > 0);
+		return $bytes;
+	}
 }
