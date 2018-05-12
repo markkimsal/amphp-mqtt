@@ -73,7 +73,7 @@ class Connection implements EventEmitterInterface {
 		$this->uri = $uri->getScheme() . "://" . $uri->getHost() . ":" . $uri->getPort();
 	}
 
-	public function send(object $packet) {
+	public function send($packet) {
 		#echo "D/Connection: sending packet ... ". get_class($packet)."\n";
 
 		$buffer = $packet->packbytes();

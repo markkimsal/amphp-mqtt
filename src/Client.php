@@ -158,7 +158,7 @@ class Client implements EventEmitterInterface {
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
 	}
 
-	private function sendAndForget(object $packet, callable $callback = null): Promise {
+	private function sendAndForget($packet, callable $callback = null): Promise {
 		if (! $this->connackReceived && !($packet  instanceof Packet\Connect)) {
 			$this->queue[] = [$packet, $callback];
 		}
@@ -169,7 +169,7 @@ class Client implements EventEmitterInterface {
 		return $p;
 	}
 
-	private function send(object $packet, callable $callback = null): Promise {
+	private function send($packet, callable $callback = null): Promise {
 		$deferred = new Deferred();
 		$pid = rand(1,10000);
 		if($packet->setId($pid)) {
