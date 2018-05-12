@@ -5,6 +5,7 @@ namespace MarkKimsal\Mqtt;
 use Amp\Uri\Uri;
 use Amp\Deferred;
 use Amp\Promise;
+use Amp\Succes;
 use Evenement\EventEmitterTrait;
 use Evenement\EventEmitterInterface;
 use function Amp\call;
@@ -34,7 +35,9 @@ class Client implements EventEmitterInterface {
 	/** @var array */
 	protected $queue = [];
 
-	protected $connackReceived = FALSE;
+	protected $connackReceived = false;
+	protected $isConnected     = false;
+	protected $connackPromisor = null;
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
@@ -65,13 +68,17 @@ class Client implements EventEmitterInterface {
 		});
 
 		$this->connection->on('close', function (Throwable $error = null) {
-			if ($error) {
-				// Fail any outstanding promises
-				while ($this->deferreds) {
-					/** @var Deferred $deferred */
-					$deferred = array_shift($this->deferreds);
-					$deferred->fail($error);
-				}
+			if ($this->connackPromisor) {
+				$this->connackPromisor->fail(new \Exception('closing socket'));
+			}
+			$this->isConnected     = false;
+			$this->connackReceived = false;
+			
+			// Fail any outstanding promises
+			while ($this->deferreds) {
+				/** @var Deferred $deferred */
+				$deferred = array_shift($this->deferreds);
+				$deferred->fail($error);
 			}
 		});
 
@@ -94,24 +101,51 @@ class Client implements EventEmitterInterface {
 			});
 		}
 
+		$this->connection->on("open", function () {
+			echo "D/Client: socket is open.\n";
+		});
+
 		$this->connection->on("connect", function ($response) {
-			echo "D/Client: Response is untracked deferred: ".get_class($response)."\n";
+			echo "D/Client: connack received: ".get_class($response)."\n";
 			$this->connackReceived = true;
+			$this->isConnected     = true;
+			$this->connackPromisor->resolve();
+			$this->connackPromisor = null;
 			$this->flushQueue();
 		});
 	}
 
 	public function connect($callback = NULL) {
-		$packet = new Packet\Connect();
-		if ($this->clientId) {
-			$packet->setClientId($this->clientId);
+		if ($this->connackPromisor) {
+			return $this->connackPromisor->promise();
 		}
-		if ($this->timeout) {
-			$packet->setTimeout($this->timeout);
+		if ($this->isConnected) {
+			return new Success();
 		}
-		$packet->setVersion311();
 
-		return $this->send($packet , $callback);
+		$this->connackPromisor = new Deferred();
+
+		$connPromise = $this->connection->connect();
+		$connPromise->onResolve(function ($err, $result) use ($callback){
+			if ($err) {
+				$connackPromisor = $this->connackPromisor;
+				$this->connackPromisor = null;
+				$connackPromisor->fail(new \Exception('socket failed'));
+				return;
+			}
+			echo "D/Client: conn connect resolved.\n";
+			$packet = new Packet\Connect();
+			if ($this->clientId) {
+				$packet->setClientId($this->clientId);
+			}
+			if ($this->timeout) {
+				$packet->setTimeout($this->timeout);
+			}
+			$packet->setVersion311();
+
+			$this->send($packet , $callback);
+		});
+		return $this->connackPromisor->promise();
 	}
 
 	public function subscribeToAll($topics, $callback = NULL) {
@@ -162,8 +196,18 @@ class Client implements EventEmitterInterface {
 	}
 
 	private function sendAndForget($packet, callable $callback = null): Promise {
+		if (! $this->isConnected) {
+			$this->connect();
+		}
 		if (! $this->connackReceived && !($packet  instanceof Packet\Connect)) {
-			$this->queue[] = [$packet, $callback];
+			$d = new Deferred();
+			$p = $d->promise();
+			if ($callback) {
+				$p->onResolve($callback);
+			}
+			$this->queue[] = [$packet, $callback, $d];
+			return $p;
+
 		}
 		$p = $this->_asyncsend($packet);
 		if ($callback) {
@@ -173,6 +217,10 @@ class Client implements EventEmitterInterface {
 	}
 
 	private function send($packet, callable $callback = null): Promise {
+		if (! $this->isConnected) {
+			$this->connect();
+		}
+
 		$deferred = new Deferred();
 		$pid = rand(1,10000);
 		if($packet->setId($pid)) {
@@ -198,7 +246,13 @@ class Client implements EventEmitterInterface {
 
 	protected function flushQueue() {
 		foreach ($this->queue as $_idx => $_struct) {
-			$this->_asyncsend($_struct[0], $_struct[1]);
+			$p = $this->_asyncsend($_struct[0]);
+			if (is_callable($_struct[1])) {
+				$p->onResolve($_struct[1]);
+			}
+			if (isset($_struct[2]) && $_struct[2] instanceof Promise) {
+				$_struct[2]->resolve();
+			}
 			unset($this->queue[$_idx]);
 		}
 	}

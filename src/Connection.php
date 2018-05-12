@@ -107,6 +107,8 @@ class Connection implements EventEmitterInterface {
 
 			$this->socket = $socket;
 
+			$this->emit('open', []);
+
 			asyncCall(function () {
 				while (($this->socket) && (null !== $chunk = yield $this->socket->read())) {
 					$this->parser->read($chunk);
