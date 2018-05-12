@@ -35,16 +35,6 @@ class Connection implements EventEmitterInterface {
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
-		/*
-		$this->handlers = [
-			"connect"  => [],
-			"message"  => [],
-			"response" => [],
-			"error"    => [],
-			"close"    => [],
-		];
-		 */
-
 		$this->parser = new Parser(function ($response) {
 
 			if ($response instanceof BadFormatException) {
