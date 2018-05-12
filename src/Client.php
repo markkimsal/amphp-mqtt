@@ -31,6 +31,9 @@ class Client implements EventEmitterInterface {
 	/** @var string */
 	public $clientId = '';
 
+	/** @var array */
+	protected $queue = [];
+
 	protected $connackReceived = FALSE;
 
 	public function __construct(string $uri) {
