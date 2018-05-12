@@ -57,6 +57,9 @@ class Connection implements EventEmitterInterface {
 			}
 
 			if ($response instanceof Packet\Connack) {
+				//need to resolve the untracked conn
+				$this->emit('response', [$response] );
+				//handle connack with special event
 				$this->emit('connect', [$response] );
 				return;
 			}
