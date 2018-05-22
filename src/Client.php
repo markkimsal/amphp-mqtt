@@ -24,7 +24,7 @@ class Client implements EventEmitterInterface {
 	protected $connection;
 
 	/** @var array */
-	protected $topicList;
+	protected $topicList = [];
 
 	/** @var int */
 	protected $timeout = 0;
@@ -266,14 +266,20 @@ class Client implements EventEmitterInterface {
 		return $promise;
 	}
 
+	/**
+	 * Send packets that were queued before we got CONACK
+	 * If they are packets which will not have any ack then we
+	 * will resolve their deferreds right here after sending.
+	 */
 	protected function flushQueue() {
 		foreach ($this->queue as $_idx => $_struct) {
 			$p = $this->_asyncsend($_struct[0]);
-			if (is_callable($_struct[1])) {
-				$p->onResolve($_struct[1]);
-			}
-			if (isset($_struct[2]) && $_struct[2] instanceof Promise) {
-				$_struct[2]->resolve();
+
+			//sometimes we have fire and forget packets for which
+			//we will never get a response, just resolve these.
+			if (isset($_struct[2]) && $_struct[2] instanceof Deferred) {
+				$def = $_struct[2];
+				$def->resolve(null, null);
 			}
 			unset($this->queue[$_idx]);
 		}
