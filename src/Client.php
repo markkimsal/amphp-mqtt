@@ -96,7 +96,7 @@ class Client implements EventEmitterInterface {
 			}
 		});
 
-		if (count($this->topicList)) {
+		if (count($this->topicList) && !empty($this->topicList)) {
 			$this->connection->on("connect", function () {
 				$promiseList = $this->subscribeToAll($this->topicList, function($err, $resp) {
 					#echo "Got subscribe to all response.\n";
@@ -211,7 +211,9 @@ class Client implements EventEmitterInterface {
 
 	private function applyUri(string $uri) {
 		$newuri = new Uri($uri);
-		$this->topicList = explode(',', $newuri->getQueryParameter("topics"));
+		if (strlen($newuri->getQueryParameter("topics"))) {
+			$this->topicList = explode(',', $newuri->getQueryParameter("topics"));
+		}
 		$this->clientId  = $newuri->getQueryParameter("clientId");
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
 	}
