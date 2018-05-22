@@ -6,9 +6,9 @@ use function MarkKimsal\Mqtt\dumphex;
 
 class Factory {
 
-	public const CONNACK = 0x20;
-	public const SUBACK  = 0x90;
-	public const PUBLISH = 0x30;
+	const CONNACK = 0x20;
+	const SUBACK  = 0x90;
+	const PUBLISH = 0x30;
 
 	public static function create($hdr, $data) {
 		$packet = NULL;
