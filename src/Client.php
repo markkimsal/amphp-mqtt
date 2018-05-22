@@ -18,7 +18,7 @@ class Client implements EventEmitterInterface {
 	protected $deferreds;
 
 	/** @var Deferred[] */
-	protected $deferredsById;
+	protected $deferredsById = [];
 
 	/** @var Connection */
 	protected $connection;
@@ -50,6 +50,9 @@ class Client implements EventEmitterInterface {
 			if ($pid = $response->getId()) {
 				echo "D/Client: Response is deferreds by id: ($pid) ".get_class($response)."\n";
 				$deferred = $this->deferredsById[$pid];
+				//must unset here because
+				//some packets send new packets with same ID
+				//during their onResolve
 				unset($this->deferredsById[$pid]);
 			} else {
 				echo "D/Client: Response is untracked deferred: ".get_class($response)."\n";
@@ -170,15 +173,33 @@ class Client implements EventEmitterInterface {
 		if (! $msg instanceof Packet\Publish) {
 			$packet = new Packet\Publish();
 			$packet->setMessage($msg);
+			$packet->setQos($qos);
 		} else {
 			$packet = $msg;
 		}
 		$packet->setTopic($topic);
 		if ($qos < 1) {
 			return $this->sendAndForget( $packet , $callback );
-		} else {
-			return $this->send( $packet , $callback );
 		}
+		if ($qos == 2) {
+			$client = $this;
+
+			//wrap final callback in pubrel auto-generating callback
+			return $this->send( $packet , function($err, $result) use($client, $callback) {
+				if ($err) {
+					$callback($err);
+					return;
+				}
+				$packet = new Packet\Pubrel();
+				$packet->setId( $result->getId() );
+				$pubcomp = $client->send( $packet );
+				$pubcomp->onResolve($callback);
+			});
+		}
+		if ($qos == 1) {
+			return $this->send( $packet , $callback);
+		}
+
 	}
 
 	public function publishRetain($msg, $topic, $qos=0, $callback=NULL) {
@@ -216,14 +237,13 @@ class Client implements EventEmitterInterface {
 		return $p;
 	}
 
-	private function send($packet, callable $callback = null): Promise {
+	public function send($packet, callable $callback = null): Promise {
 		if (! $this->isConnected) {
 			$this->connect();
 		}
 
 		$deferred = new Deferred();
-		$pid = rand(1,10000);
-		if($packet->setId($pid)) {
+		if($pid = $packet->getId()) {
 			echo "D/Client: Packet is deferred by id: ($pid) ".get_class($packet)."\n";
 			$this->deferredsById[$pid] = $deferred;
 		} else {

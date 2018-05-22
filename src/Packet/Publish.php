@@ -8,8 +8,12 @@ class Publish extends Base {
 	protected $msg    = null;
 	protected $topic  = null;
 	protected $retain = false;
+	protected $qos    = 0x00;
 
 	public function __construct() {
+
+		$pid = rand(1,10000);
+		$this->setId($pid);
 	}
 
 	public function fromNetwork($hdr, $data) {
@@ -30,18 +34,17 @@ class Publish extends Base {
 
 		$topic   = $this->getTopic();
 		$payload = $this->getMessage();
-		$qos     = 0x00;
 
 		$hdr = $this->type | 0x00;
 		if ($this->getRetain()) {
 			$hdr |= 0x01;
 		}
 
-		$hdr |= $qos;
+		$hdr |= $this->getQos()<<1;
 
 		$vhd  = pack('n', strlen($topic)).$topic;
 		//only required for QoS > 0
-		if ($qos > 0 ) {
+		if ($this->getQos() > 0 ) {
 			$vhd .= pack('n', $this->getId());
 		}
 
@@ -75,5 +78,15 @@ class Publish extends Base {
 	}
 	public function getRetain() {
 		return $this->retain;
+	}
+
+	public function setQos($qos) {
+		if ($qos >= 0 && $qos <=2) {
+			$this->qos = $qos;
+		}
+	}
+
+	public function getQos() {
+		return $this->qos;
 	}
 }

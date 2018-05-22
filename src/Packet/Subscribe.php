@@ -13,6 +13,11 @@ class Subscribe extends Base {
 	public $flagWillQos1     = 0x08;
 	public $flagWillQos2     = 0x10;
 
+	public function __construct() {
+		$pid = rand(1,10000);
+		$this->setId($pid);
+	}
+
 	public function getTopic() {
 		return $this->topic;
 	}
