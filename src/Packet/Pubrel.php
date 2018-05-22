@@ -29,7 +29,6 @@ class Pubrel extends Base {
 		$pid = $this->getId();
 
 		$vhd  = pack('cn', 2, $pid);
-		$this->dumphex($vhd);
 
 		$buffer  = pack('C*', $hdr).$vhd; 
 		//$this->dumphex($buffer);
