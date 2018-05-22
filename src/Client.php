@@ -81,7 +81,11 @@ class Client implements EventEmitterInterface {
 			while ($this->deferreds) {
 				/** @var Deferred $deferred */
 				$deferred = array_shift($this->deferreds);
-				$deferred->fail($error);
+				if ($error) {
+					$deferred->fail($error);
+				} else {
+					$deferred->fail(new \Exception("Connection closed"));
+				}
 			}
 		});
 
