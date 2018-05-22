@@ -4,6 +4,7 @@ namespace MarkKimsal\Mqtt;
 
 use Amp\Deferred;
 use Amp\Socket\ClientConnectContext;
+use Amp\Socket\ClientTlsContext;
 use Amp\Socket\Socket;
 use Amp\Success;
 use Amp\Uri\Uri;
@@ -12,6 +13,7 @@ use Evenement\EventEmitterInterface;
 use function Amp\asyncCall;
 use function Amp\call;
 use function Amp\Socket\connect;
+use function Amp\Socket\cryptoConnect;
 
 
 class Connection implements EventEmitterInterface {
@@ -32,6 +34,8 @@ class Connection implements EventEmitterInterface {
 
 	/** @var string */
 	private $uri;
+
+	protected $enableCrypto = false;
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
@@ -63,7 +67,19 @@ class Connection implements EventEmitterInterface {
 		$uri = new Uri($uri);
 
 		$this->timeout = (int) ($uri->getQueryParameter("timeout") ?? $this->timeout);
+
 		$this->uri = $uri->getScheme() . "://" . $uri->getHost() . ":" . $uri->getPort();
+
+		if ($uri->getScheme() == 'tls' ) {
+			$this->withEnableCrypto();
+			//only  tcp, udp, unix or udg
+			$this->uri = str_replace('tls://', 'tcp://', $this->uri);
+		}
+
+	}
+
+	public function withEnableCrypto() {
+		$this->enableCrypto = true;
 	}
 
 	public function send($packet) {
@@ -88,8 +104,18 @@ class Connection implements EventEmitterInterface {
 		}
 
 		$this->connectPromisor = new Deferred;
+		$p = $this->connectPromisor->promise();
 
-		$socketPromise = connect($this->uri, (new ClientConnectContext)->withConnectTimeout($this->timeout));
+		if ($this->enableCrypto) {
+			//you can't enable crypto later because
+			//the client will already be sending "connect"
+			//because the stream_enable_crypto is scheduled
+			//for next tick
+			$socketPromise = cryptoConnect($this->uri, (new ClientConnectContext)->withConnectTimeout($this->timeout),
+			(new ClientTlsContext)->withoutPeerVerification());
+		} else {
+			$socketPromise = connect($this->uri, (new ClientConnectContext)->withConnectTimeout($this->timeout));
+		}
 
 		$socketPromise->onResolve(function ($error, $socket) {
 			$connectPromisor = $this->connectPromisor;
@@ -119,7 +145,7 @@ class Connection implements EventEmitterInterface {
 			$connectPromisor->resolve();
 		});
 
-		return $this->connectPromisor->promise();
+		return $p;
 	}
 
 	private function onError(\Throwable $exception) {
