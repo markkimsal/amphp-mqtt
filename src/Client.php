@@ -280,7 +280,7 @@ class Client implements EventEmitterInterface {
 	protected function _asyncsend($packet, $promise=NULL) {
 		return call(function () use ($packet, $promise) {
 			yield $this->connection->send($packet);
-			if ($promise) yield $promise;
+			if ($promise instanceof \Amp\Promise) yield $promise;
 		});
 	}
 }
