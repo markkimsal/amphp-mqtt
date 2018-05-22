@@ -8,7 +8,20 @@
 composer require markkimsal/amphp-mqtt
 ```
 
+This project does not require any PHP extensions.
+
 ## Usage
+
+Every publish or subscribe returns an `Amp\Promise` that you can react to when it's resolved.  Messages are received from `->on('message')` and that takes a callback with only 1 argument: the `Packet\Publish` class.  `Packet\Publish` is used for both sending and receiving messages.
+
+
+You can start sending and subscribing before the connection ack packet is received and the system will queue up your packets but still return a `Amp\Promise` immediately.
+
+QoS 0 packets will resolve as soon as they are sent as they will not get any acknowledgement from the server.
+
+QoS 1 packets will resolve when the client gets a Puback packet.
+
+QoS 2 packets will resolve when the client gets a Pubcomp packet.  The client will automatically respond to Pubrec with a Pubrel as per the spec.
 
 ```php
 <?php
