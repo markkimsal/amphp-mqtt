@@ -131,13 +131,14 @@ class Client implements EventEmitterInterface {
 		}
 
 		$this->connackPromisor = new Deferred();
+		$p = $this->connackPromisor->promise();
 
 		$connPromise = $this->connection->connect();
 		$connPromise->onResolve(function ($err, $result) use ($callback){
 			if ($err) {
 				$connackPromisor = $this->connackPromisor;
 				$this->connackPromisor = null;
-				$connackPromisor->fail(new \Exception('socket failed'));
+				$connackPromisor->fail(new \Exception('socket failed: '. $err));
 				return;
 			}
 			echo "D/Client: conn connect resolved.\n";
@@ -152,7 +153,7 @@ class Client implements EventEmitterInterface {
 
 			$this->send($packet , $callback);
 		});
-		return $this->connackPromisor->promise();
+		return $p;
 	}
 
 	public function subscribeToAll($topics, $callback = NULL) {
