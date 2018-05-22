@@ -23,6 +23,8 @@ QoS 1 packets will resolve when the client gets a Puback packet.
 
 QoS 2 packets will resolve when the client gets a Pubcomp packet.  The client will automatically respond to Pubrec with a Pubrel as per the spec.
 
+Supports TLSv1.2 by using "tls://" prefix to the URI of the server.  Peer verification is not done.
+
 ```php
 <?php
 include('vendor/autoload.php');
