@@ -104,3 +104,46 @@ You can use this library in a synchronous backend to wait for sending packets wi
 	Amp\Promise\wait($p2);
 	return;
 ```
+
+Manual Publish Acking
+===
+You can control when you acknowlege publish messages of QoS 1 and 2 by disabling the auto-ack feature.
+Otherwise, the appropriate acknowledgement packets will be sent after the `on('message')` handler is run.
+
+```php
+<?php
+	include('vendor/autoload.php');
+
+	$client = new MarkKimsal\Mqtt\Client('tcp://172.17.0.1:1883?topics=foo,bar&clientId=abc123');
+	$client->disableAutoAck();
+
+	$p2 = $client->subscribe('test/#', function($err, $resp) {
+		echo "***** SUBSCRIBE Resolved *******\n";
+	});
+
+
+	$p = $client->connect();
+
+	$client->on('message', function($publishPacket) use($client) {
+		if ($publishPacket->isDup()) {
+			echo "****** got a DUP on topic: [".$publishPacket->getTopic()."] ***** \n";
+			echo $publishPacket->getMessage()."\n";
+		} else {
+			echo "****** got a message on topic: [".$publishPacket->getTopic()."] ***** \n";
+			echo $publishPacket->getMessage()."\n";
+		}
+
+		//save message with durability here
+
+		$client->acknowledge($publishPacket);
+	});
+```
+
+Clean Session
+===
+You can connect with a clean session by adding `cleanSession` as a URL parameter
+```php
+	include('vendor/autoload.php');
+
+	$client = new MarkKimsal\Mqtt\Client('tcp://172.17.0.1:1883?clientId=abc123&cleanSession');
+```
