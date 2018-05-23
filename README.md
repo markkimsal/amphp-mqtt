@@ -25,6 +25,8 @@ QoS 2 packets will resolve when the client gets a Pubcomp packet.  The client wi
 
 Supports TLSv1.2 by using "tls://" prefix to the URI of the server.  Peer verification is not done.
 
+Supports username and password authentication as parameters of the connection URL.
+
 ```php
 <?php
 include('vendor/autoload.php');
