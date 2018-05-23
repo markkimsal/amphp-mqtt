@@ -115,11 +115,11 @@ class Client implements EventEmitterInterface {
 		}
 
 		$this->connection->on("open", function () {
-			echo "D/Client: socket is open.\n";
+			//echo "D/Client: socket is open.\n";
 		});
 
 		$this->connection->on("connect", function ($response) {
-			echo "D/Client: connack received: ".get_class($response)."\n";
+			//echo "D/Client: connack received: ".get_class($response)."\n";
 			$this->connackReceived = true;
 			$this->isConnected     = true;
 			$this->connackPromisor->resolve();
@@ -147,8 +147,12 @@ class Client implements EventEmitterInterface {
 				$connackPromisor->fail(new \Exception('socket failed: '. $err));
 				return;
 			}
-			echo "D/Client: conn connect resolved.\n";
 			$packet = new Packet\Connect();
+			if (!$this->enableCleanSession && !$this->clientId) {
+				echo "W/Client: Establishing a session without a clientId is not allowed. Enabling clean session.\n";
+				$this->enableCleanSession = true;
+			}
+
 			if ($this->clientId) {
 				$packet->setClientId($this->clientId);
 			}
@@ -158,6 +162,7 @@ class Client implements EventEmitterInterface {
 			if ($this->enableCleanSession) {
 				$packet->withCleanSession();
 			}
+
 			$packet->setVersion311();
 
 			$this->send($packet , $callback);
