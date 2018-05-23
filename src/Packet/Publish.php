@@ -22,8 +22,11 @@ class Publish extends Base {
 //		$this->dumphex($data);
 
 		$dup = $hdr & 0x08;
-
 		$this->setDup($dup);
+
+		$qos = $hdr & 0x06;
+		$qos = $qos >> 1;
+		$this->setQos($qos);
 
 		$len  = unpack('n', substr($data, 0, 2));
 		$len  = $len[1];
@@ -31,6 +34,10 @@ class Publish extends Base {
 		
 		$this->topic  = substr($data, 0, $len);
 		$data = substr($data, $len);
+
+		$pid  = unpack('n', substr($data, 0, 2));
+		$pid  = $pid[1];
+		$this->setId($pid);
 
 		$this->msg = $data;
 	}

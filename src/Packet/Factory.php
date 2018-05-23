@@ -57,6 +57,13 @@ class Factory {
 			$packet = new Pubrec();
 			$packet->fromNetwork($hdr, $data);
 		}
+		if ($highbit == Factory::PUBREL) {
+			if (strlen($data) < 2) {
+				throw new \Exception('not enough payload for publish');
+			}
+			$packet = new Pubrel();
+			$packet->fromNetwork($hdr, $data);
+		}
 		if ($highbit == Factory::PUBCOMP) {
 			if (strlen($data) < 2) {
 				throw new \Exception('not enough payload for publish');

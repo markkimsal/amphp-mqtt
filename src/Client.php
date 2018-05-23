@@ -38,6 +38,7 @@ class Client implements EventEmitterInterface {
 	protected $connackReceived = false;
 	protected $isConnected     = false;
 	protected $connackPromisor = null;
+	protected $autoAckPublish  = true;
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
@@ -48,7 +49,7 @@ class Client implements EventEmitterInterface {
 
 		$this->connection->on("response", function ($response) {
 			if ($pid = $response->getId()) {
-				echo "D/Client: Response is deferreds by id: ($pid) ".get_class($response)."\n";
+				echo "D/Client: Message ($pid) got: ".get_class($response)."\n";
 				$deferred = $this->deferredsById[$pid];
 				//must unset here because
 				//some packets send new packets with same ID
@@ -68,6 +69,10 @@ class Client implements EventEmitterInterface {
 
 		$this->connection->on("message", function ($response) {
 			$this->emit('message', [$response]); //up the chain
+
+			if ($this->autoAckPublish) {
+				$this->acknowledge($response);
+			}
 		});
 
 		$this->connection->on('close', function (Throwable $error = null) {
@@ -163,7 +168,7 @@ class Client implements EventEmitterInterface {
 
 		$promiseList = [];
 		foreach ($topics as $t) {
-			$promiseList[] = $this->subscribe( $t, $callback);
+			$promiseList[] = $this->subscribe($t, $callback);
 		}
 		return $promiseList;
 	}
@@ -215,7 +220,6 @@ class Client implements EventEmitterInterface {
 		if ($qos == 1) {
 			return $this->send( $packet , $callback);
 		}
-
 	}
 
 	public function publishRetain($msg, $topic, $qos=0, $callback=NULL) {
@@ -225,6 +229,31 @@ class Client implements EventEmitterInterface {
 		return $this->publish($packet, $topic, $qos, $callback);
 	}
 
+	public function acknowledge($packet) {
+		$qos = $packet->getQos();
+		if ($qos == 0) {
+			return;
+		}
+		if ($qos == 1) {
+			$response = new Packet\Puback();
+			$response->setId($packet->getId());
+			$this->sendAndForget($response);
+		}
+		if ($qos == 2) {
+			$response = new Packet\Pubrec();
+			$response->setId($packet->getId());
+			$client = $this;
+			$this->send($response, function($err, $result) use($client) {
+				if ($err) {
+					throw new \Exception($err);
+				}
+				$packet = new Packet\Pubcomp();
+				$packet->setId( $result->getId() );
+				$client->sendAndForget( $packet );
+			});
+		}
+	}
+
 	private function applyUri(string $uri) {
 		$newuri = new Uri($uri);
 		if (strlen($newuri->getQueryParameter("topics"))) {
@@ -232,6 +261,14 @@ class Client implements EventEmitterInterface {
 		}
 		$this->clientId  = $newuri->getQueryParameter("clientId");
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
+	}
+
+	public function enableAutoAck() {
+		$this->autoAckPublish = true;
+	}
+
+	public function disableAutoAck() {
+		$this->autoAckPublish = false;
 	}
 
 	private function sendAndForget($packet, callable $callback = null): Promise {
@@ -248,6 +285,9 @@ class Client implements EventEmitterInterface {
 			return $p;
 
 		}
+		if($pid = $packet->getId()) {
+			echo "D/Client: Message ($pid) sending: ".get_class($packet)."\n";
+		}
 		$p = $this->_asyncsend($packet);
 		if ($callback) {
 			$p->onResolve($callback);
@@ -262,7 +302,8 @@ class Client implements EventEmitterInterface {
 
 		$deferred = new Deferred();
 		if($pid = $packet->getId()) {
-			echo "D/Client: Packet is deferred by id: ($pid) ".get_class($packet)."\n";
+
+			echo "D/Client: Message ($pid) sending: ".get_class($packet)."\n";
 			$this->deferredsById[$pid] = $deferred;
 		} else {
 			echo "D/Client: Adding untracked deferred for packet: ". get_class($packet)."\n";
