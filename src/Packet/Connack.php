@@ -24,24 +24,20 @@ class Connack extends Base {
 		if ($rsp == 0) {
 			return;
 		}
-		if ($rsp & 0x01) {
-			throw new \Exception("Unaccepted protocol version");
+		if ($rsp & 0x05) {
+			throw new \Exception("Not authorized");
 		}
-
-		if ($rsp & 0x02) {
-			throw new \Exception("Identifier Rejected");
-		}
-
-		if ($rsp & 0x03) {
-			throw new \Exception("Server unavailable");
-		}
-
 		if ($rsp & 0x04) {
 			throw new \Exception("Bad username");
 		}
-
-		if ($rsp & 0x05) {
-			throw new \Exception("Not authorized");
+		if ($rsp & 0x03) {
+			throw new \Exception("Server unavailable");
+		}
+		if ($rsp & 0x02) {
+			throw new \Exception("Identifier Rejected");
+		}
+		if ($rsp & 0x01) {
+			throw new \Exception("Unaccepted protocol version");
 		}
 	}
 }
