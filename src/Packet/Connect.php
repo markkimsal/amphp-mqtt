@@ -4,13 +4,19 @@ namespace MarkKimsal\Mqtt\Packet;
 
 class Connect extends Base {
 
-	public $version   = 0x04; //3.11
-	public $keepalive = 0;
-	public $clientId  = '';
-	public $flagCleanSession = 0x02;
-	public $flagWill         = 0x04;
-	public $flagWillQos1     = 0x08;
-	public $flagWillQos2     = 0x10;
+	protected $version   = 0x04; //3.11
+	protected $keepalive = 0;
+	protected $clientId  = '';
+	protected $flagCleanSession = 0x02;
+	protected $flagWill         = 0x04;
+	protected $flagWillQos1     = 0x08;
+	protected $flagWillQos2     = 0x10;
+	protected $enableCleanSession = false;
+
+
+	public function withCleanSession() {
+		$this->enableCleanSession = true;
+	}
 
 	public function getId() {
 		return FALSE;
@@ -39,7 +45,9 @@ class Connect extends Base {
 		$buffer  = pack('C*', 0x10, $len , 0x00 , 0x04). 'MQTT';
 
 		$flags = 0x00;
-		$flags = $flags | $this->flagCleanSession;
+		if ($this->enableCleanSession) {
+			$flags = $flags | $this->flagCleanSession;
+		}
 //		$flags = $flags | $this->flagWillQos2;
 //		$flags = $flags | $this->flagWill;
 

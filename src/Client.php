@@ -35,10 +35,11 @@ class Client implements EventEmitterInterface {
 	/** @var array */
 	protected $queue = [];
 
-	protected $connackReceived = false;
-	protected $isConnected     = false;
-	protected $connackPromisor = null;
-	protected $autoAckPublish  = true;
+	protected $connackReceived    = false;
+	protected $isConnected        = false;
+	protected $connackPromisor    = null;
+	protected $autoAckPublish     = true;
+	protected $enableCleanSession = false;
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
@@ -154,6 +155,9 @@ class Client implements EventEmitterInterface {
 			if ($this->timeout) {
 				$packet->setTimeout($this->timeout);
 			}
+			if ($this->enableCleanSession) {
+				$packet->withCleanSession();
+			}
 			$packet->setVersion311();
 
 			$this->send($packet , $callback);
@@ -261,6 +265,8 @@ class Client implements EventEmitterInterface {
 		}
 		$this->clientId  = $newuri->getQueryParameter("clientId");
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
+
+		$this->enableCleanSession = (bool)$newuri->hasQueryParameter("cleanSession");
 	}
 
 	public function enableAutoAck() {
