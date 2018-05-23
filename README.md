@@ -141,9 +141,14 @@ Otherwise, the appropriate acknowledgement packets will be sent after the `on('m
 
 Clean Session
 ===
-You can connect with a clean session by adding `cleanSession` as a URL parameter
+You can connect with a clean session by adding `cleanSession` as a URL parameter.
+
+You MUST either use a clean session or supply a client ID.
+
+If you do not supply a clientId a clean session is automatically created for you.
+
 ```php
 	include('vendor/autoload.php');
 
-	$client = new MarkKimsal\Mqtt\Client('tcp://172.17.0.1:1883?clientId=abc123&cleanSession');
+	$client = new MarkKimsal\Mqtt\Client('tcp://172.17.0.1:1883?cleanSession');
 ```
