@@ -9,6 +9,7 @@ class Publish extends Base {
 	protected $topic  = null;
 	protected $retain = false;
 	protected $qos    = 0x00;
+	protected $dup    = false;
 
 	public function __construct() {
 
@@ -19,6 +20,10 @@ class Publish extends Base {
 	public function fromNetwork($hdr, $data) {
 //		$this->dumphex($hdr);
 //		$this->dumphex($data);
+
+		$dup = $hdr & 0x08;
+
+		$this->setDup($dup);
 
 		$len  = unpack('n', substr($data, 0, 2));
 		$len  = $len[1];
@@ -88,5 +93,16 @@ class Publish extends Base {
 
 	public function getQos() {
 		return $this->qos;
+	}
+
+	public function setDup($dup) {
+		$this->dup = false;
+		if ($dup) {
+			$this->dup = true;
+		}
+	}
+
+	public function isDup() {
+		return $this->dup;
 	}
 }
