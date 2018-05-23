@@ -40,6 +40,8 @@ class Client implements EventEmitterInterface {
 	protected $connackPromisor    = null;
 	protected $autoAckPublish     = true;
 	protected $enableCleanSession = false;
+	protected $username           = '';
+	protected $password           = '';
 
 	public function __construct(string $uri) {
 		$this->applyUri($uri);
@@ -151,6 +153,12 @@ class Client implements EventEmitterInterface {
 			if (!$this->enableCleanSession && !$this->clientId) {
 				echo "W/Client: Establishing a session without a clientId is not allowed. Enabling clean session.\n";
 				$this->enableCleanSession = true;
+			}
+			if ($this->username) {
+				$packet->setUsername($this->username);
+			}
+			if ($this->password) {
+				$packet->setPassword($this->password);
 			}
 
 			if ($this->clientId) {
@@ -272,6 +280,8 @@ class Client implements EventEmitterInterface {
 		$this->timeout   = (int)$newuri->getQueryParameter("timeout");
 
 		$this->enableCleanSession = (bool)$newuri->hasQueryParameter("cleanSession");
+		$this->username           = $newuri->getQueryParameter("username");
+		$this->password           = $newuri->getQueryParameter("password");
 	}
 
 	public function enableAutoAck() {
