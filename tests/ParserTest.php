@@ -28,15 +28,15 @@ class ParserTest extends TestCase {
 	}
 
 	public function test_parser_handles_more_data_than_one_packet() {
-		//message size is 6 bytes, passing in 7 (after fixed 1 byte header)
-		$this->parser->read(pack('C*', 0x30, 0x06, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b, 0x90));
+		//message size is 8 bytes, passing in 9 (after remaining length and header bytes)
+		$this->parser->read(pack('C*', 0x30, 0x08, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b, 0x00, 0x01, 0x99));
 		$this->assertTrue($this->parsedPacket instanceof Packet\Publish);
 		$this->assertEquals(1, $this->parser->bytesRemaining());
 	}
 
 	public function test_parser_handles_two_packets() {
 		//passing 2 6 byte publish packets
-		$this->parser->read(pack('C*', 0x30, 0x06, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b, 0x30, 0x06, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b));
+		$this->parser->read(pack('C*', 0x30, 0x08, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b, 0x00, 0x01, 0x30, 0x08, 0x00, 0x03, 0x66, 0x6f, 0x6f, 0x6b, 0x00, 0x01));
 		$this->assertTrue($this->parsedPacketList[0] instanceof Packet\Publish);
 		$this->assertTrue($this->parsedPacketList[1] instanceof Packet\Publish);
 		$this->assertEquals(2, count($this->parsedPacketList));
